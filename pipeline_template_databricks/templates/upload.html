@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow">
+  <h2>Upload a document</h2>
+  <p class="muted">The PDF is stored in <code>{{ location }}/&lt;year&gt;/&lt;source&gt;/&lt;file&gt;.pdf</code>.</p>
+  <form method="post" action="{{ url_prefix }}/upload" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Source (publisher / team) <input name="source" required></label>
+    <label>Year <input name="year" type="number" value="{{ year }}" required></label>
+    <label>PDF file <input name="file" type="file" accept="application/pdf" required></label>
+    <button type="submit">Upload</button>
+  </form>
+</section>
+
+<section class="card narrow">
+  <h2>Process new files</h2>
+  <p class="muted">Parses every PDF that is not in the documents table yet, then recomputes themes, scores and the comparison. This can take a few minutes.</p>
+  <form method="post" action="{{ url_prefix }}/process-new">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Process new files</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Optional. Preferred canonical theme names. Consolidation snaps close matches to these and shows them to the model. Replace the examples, or delete the list to let the model choose freely.",
+  "themes": [
+    "Demand and Market Share",
+    "Regulation and Policy",
+    "Technology Disruption",
+    "Cost and Margin Pressure",
+    "Talent and Capability"
+  ]
+}

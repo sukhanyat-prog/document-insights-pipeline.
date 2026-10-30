@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow">
+  <h2>Upload a document</h2>
+  <p class="muted">The PDF is stored in <code>gs://{{ bucket }}/&lt;year&gt;/&lt;source&gt;/&lt;file&gt;.pdf</code>. The storage event then starts the pipeline.</p>
+  <form method="post" action="{{ url_prefix }}/upload" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Source (publisher / team) <input name="source" required></label>
+    <label>Year <input name="year" type="number" value="{{ year }}" required></label>
+    <label>PDF file <input name="file" type="file" accept="application/pdf" required></label>
+    <button type="submit">Upload</button>
+  </form>
+</section>
+{% endblock %}

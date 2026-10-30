@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="toolbar">
+  <label>Year
+    <select id="year">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == year else '' }}>{{ y }}</option>{% endfor %}
+    </select>
+  </label>
+  <span id="loading" class="muted">Loading...</span>
+</div>
+
+<section class="kpis" id="kpis"></section>
+
+<section class="card">
+  <h2>Theme scores</h2>
+  <p class="muted">Score = coverage (sources citing the theme) and intensity (severity language). Edit the formula in <code>pipeline/scoring.py</code>.</p>
+  <table id="scores"><thead><tr>
+    <th>Theme</th><th>Score</th><th>Band</th><th>Sources</th><th>Mentions</th><th>Direction</th>
+  </tr></thead><tbody></tbody></table>
+</section>
+
+<section class="card">
+  <h2>Compared with the reference table</h2>
+  <table id="comparison"><thead><tr>
+    <th>Theme</th><th>Score</th><th>Reference</th><th>Gap</th><th>Status</th><th>Detail</th>
+  </tr></thead><tbody></tbody></table>
+</section>
+
+<section class="card">
+  <h2>Documents</h2>
+  <table id="documents"><thead><tr><th>Source</th><th>Title</th><th>Findings</th><th>Parsed</th></tr></thead><tbody></tbody></table>
+</section>
+
+<script>
+  const API = "{{ url_prefix }}/api/dashboard";
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fmt = v => (v === null || v === undefined) ? "-" : v;
+
+  function fill(id, rows, cells) {
+    const body = document.querySelector(`#${id} tbody`);
+    body.innerHTML = rows.length ? rows.map(r => `<tr>${cells(r)}</tr>`).join("")
+                                 : `<tr><td colspan="9" class="muted">No data for this year yet.</td></tr>`;
+  }
+
+  async function load() {
+    const year = document.getElementById("year").value;
+    document.getElementById("loading").textContent = "Loading...";
+    const res = await fetch(`${API}?year=${year}`);
+    if (!res.ok) { document.getElementById("loading").textContent = "Could not load data (" + res.status + ")"; return; }
+    const d = await res.json();
+    document.getElementById("loading").textContent = "";
+
+    const k = d.kpis;
+    document.getElementById("kpis").innerHTML = [
+      ["Documents", k.documents], ["Sources", k.sources], ["Themes", k.themes],
+      ["High band", k.high_band], ["Blind spots", k.blind_spots],
+    ].map(([label, value]) => `<div class="kpi"><div class="v">${value}</div><div class="l">${label}</div></div>`).join("");
+
+    fill("scores", d.scores, r => `
+      <td>${esc(r.canonical_theme)}</td>
+      <td><div class="bar"><span style="width:${Math.min(100, r.score)}%"></span></div> ${r.score}</td>
+      <td><span class="pill ${esc(r.band)}">${esc(r.band)}</span></td>
+      <td>${esc(r.sources_citing)}</td><td>${r.mention_count}</td><td>${esc(r.direction)}</td>`);
+
+    fill("comparison", d.comparison, r => `
+      <td>${esc(r.canonical_theme)}</td><td>${fmt(r.score)}</td><td>${fmt(r.reference_value)}</td>
+      <td>${fmt(r.gap)}</td><td><span class="pill s-${esc(r.status)}">${esc(r.status.replaceAll("_", " "))}</span></td>
+      <td>${esc(r.detail)}</td>`);
+
+    fill("documents", d.documents, r => `
+      <td>${esc(r.source)}</td><td>${esc(r.title)}</td><td>${r.findings_count}</td><td>${esc(r.parsed_at)}</td>`);
+  }
+
+  document.getElementById("year").addEventListener("change", load);
+  load();
+</script>
+{% endblock %}

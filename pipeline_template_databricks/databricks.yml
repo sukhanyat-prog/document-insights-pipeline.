@@ -1,0 +1,56 @@
+# Databricks Asset Bundle: a job that parses new PDFs whenever a file lands in the volume.
+# Deploy:  databricks bundle validate && databricks bundle deploy -t dev
+# Review node type / runtime for your workspace and cloud before deploying; verify against the current bundle docs.
+bundle:
+  name: pipeline-template
+
+variables:
+  catalog:    { default: main }
+  schema:     { default: pipeline_template }
+  volume:     { default: documents }
+  warehouse_id: { default: "" }
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://your-workspace.cloud.databricks.com   # or use a CLI profile
+
+resources:
+  jobs:
+    parse_new_documents:
+      name: pipeline-template-parse-new-documents
+      max_concurrent_runs: 1            # documents are processed one run at a time
+      trigger:
+        file_arrival:
+          url: /Volumes/${var.catalog}/${var.schema}/${var.volume}/
+          min_time_between_triggers_seconds: 120
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge          # change for your cloud (Azure: Standard_DS3_v2, GCP: n2-standard-4)
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags: { ResourceClass: SingleNode }
+            spark_env_vars:
+              DBX_CATALOG: ${var.catalog}
+              DBX_SCHEMA: ${var.schema}
+              DBX_VOLUME: ${var.volume}
+              DATABRICKS_WAREHOUSE_ID: ${var.warehouse_id}
+              AUTO_REFRESH: "true"
+      tasks:
+        - task_key: parse_new
+          job_cluster_key: small
+          spark_python_task:
+            python_file: scripts/run_pipeline.py
+            parameters: ["parse-new"]
+          libraries:
+            - pypi: { package: "pydantic>=2.0.0" }
+            - pypi: { package: "pypdf>=4.0.0" }
+            - pypi: { package: "python-dotenv>=1.0.0" }
+            - pypi: { package: "databricks-sql-connector>=3.1.0" }
+            - pypi: { package: "openai>=1.30.0" }

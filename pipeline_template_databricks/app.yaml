@@ -1,0 +1,23 @@
+# Databricks Apps runtime configuration.
+# `valueFrom` names must match the resource keys you add to the app (Compute > Apps > <app> > Edit > Resources):
+#   sql-warehouse -> a SQL warehouse (CAN USE)
+#   secret-key    -> a secret scope key holding a long random string (CAN READ)
+command: ["python", "serve.py"]
+
+env:
+  - name: APP_ENV
+    value: "production"
+  - name: SECRET_KEY
+    valueFrom: "secret-key"
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: "sql-warehouse"
+  - name: DBX_CATALOG
+    value: "main"
+  - name: DBX_SCHEMA
+    value: "pipeline_template"
+  - name: DBX_VOLUME
+    value: "documents"
+  - name: TABLE_PREFIX
+    value: "tpl_"
+  - name: LLM_ENDPOINT
+    value: "databricks-meta-llama-3-3-70b-instruct"
